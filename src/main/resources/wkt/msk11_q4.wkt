@@ -1,0 +1,20 @@
+PROJCS["MSK11 Zone 4",
+    GEOGCS["Pulkovo 1942",
+        DATUM["Pulkovo_1942",
+            SPHEROID["Krassowsky 1940",6378245,298.3],
+            TOWGS84[23.57,-140.95,-79.8,0,0.35,0.79,-0.22]],
+        PRIMEM["Greenwich",0,
+            AUTHORITY["EPSG","8901"]],
+        UNIT["degree",0.0174532925199433,
+            AUTHORITY["EPSG","9122"]],
+        AUTHORITY["EPSG","4284"]
+    ],
+    PROJECTION["Transverse_Mercator"],
+    PARAMETER["latitude_of_origin",0],
+    PARAMETER["central_meridian",50.03333333333],
+    PARAMETER["scale_factor",1],
+    PARAMETER["false_easting",4400000],
+    PARAMETER["false_northing",-6211057.63],
+    UNIT["metre",1, AUTHORITY["EPSG","9001"]],
+    AUTHORITY["CUSTOM","11004"]
+]
