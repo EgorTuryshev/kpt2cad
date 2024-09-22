@@ -1,9 +1,12 @@
 package ru.rkomi.kpt2cad.xslt;
 
+import org.springframework.stereotype.Component;
+
 import ru.rkomi.kpt2cad.KnownTransformation;
 import java.util.HashMap;
 import java.util.Map;
 
+@Component
 public class CoordinateSystemDictionary {
 
     // Словарь для хранения соответствий кадастровых номеров и преобразований из KnownTransformation
