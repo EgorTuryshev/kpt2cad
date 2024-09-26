@@ -28,6 +28,8 @@ public class GeometryFeature {
         this.geometry = geometry;
     }
 
+    public GeometryFeature() {}
+
     public String getSrcFile() { return srcFile; }
     public void setSrcFile(String srcFile) { this.srcFile = srcFile; }
 
