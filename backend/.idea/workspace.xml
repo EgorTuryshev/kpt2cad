@@ -5,11 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2696df63-e982-4cec-a8a6-aa8b3cf0a3cb" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/ShapeTools.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/ru/rkomi/kpt2cad/ShapeToolsTests.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/ShapeTools.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/ShapeTools.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/controllers/FileController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/controllers/FileController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/xslt/GeometryFeature.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/xslt/GeometryFeature.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,6 +34,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;JUnit.ShapeToolsTests.executor&quot;: &quot;Run&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
     &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
     &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
@@ -60,7 +59,22 @@
       <recent name="ru.rkomi.kpt2cad" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Spring Boot.Proj4DemoApplication">
+    <configuration name="ShapeToolsTests" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="proj4demo" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="ru.rkomi.kpt2cad.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="ru.rkomi.kpt2cad" />
+      <option name="MAIN_CLASS_NAME" value="ru.rkomi.kpt2cad.ShapeToolsTests" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Proj4DemoApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="proj4demo" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="ru.rkomi.kpt2cad.Proj4DemoApplication" />
@@ -68,6 +82,11 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JUnit.ShapeToolsTests" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -92,6 +111,8 @@
       <workItem from="1727181310845" duration="940000" />
       <workItem from="1727373103022" duration="1344000" />
       <workItem from="1727391942675" duration="1163000" />
+      <workItem from="1727393345345" duration="152000" />
+      <workItem from="1727616269482" duration="4161000" />
     </task>
     <servers />
   </component>

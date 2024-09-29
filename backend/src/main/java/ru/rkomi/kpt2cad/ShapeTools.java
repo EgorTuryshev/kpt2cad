@@ -18,9 +18,7 @@ import ru.rkomi.kpt2cad.xslt.GeometryFeature;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 public class ShapeTools {
 
@@ -73,14 +71,10 @@ public class ShapeTools {
                 System.out.println("Не удалось записать в shapefile");
             }
         } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
+            transaction.rollback();
             throw new IOException("Ошибка записи shapefile", e);
         } finally {
-            if (transaction != null) {
-                transaction.close();
-            }
+            transaction.close();
             if (newDataStore != null) {
                 newDataStore.dispose();
             }
@@ -92,11 +86,17 @@ public class ShapeTools {
         String baseName = shapefile.getName().substring(0, shapefile.getName().lastIndexOf('.'));
         File dir = shapefile.getParentFile();
 
+        String zipFileName = new File(zipFilePath).getName();
+
+        String[] extensions = {".shp", ".shx", ".dbf", ".prj", ".sbn", ".sbx", ".cpg"};
+        List<String> extensionList = Arrays.asList(extensions);
+
         try (FileOutputStream fos = new FileOutputStream(zipFilePath);
              java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos)) {
 
-            for (File file : dir.listFiles()) {
-                if (file.getName().startsWith(baseName + ".")) {
+            for (File file : Objects.requireNonNull(dir.listFiles())) {
+                String fileExtension = file.getName().substring(file.getName().lastIndexOf('.')).toLowerCase();
+                if (file.getName().startsWith(baseName + ".") && extensionList.contains(fileExtension) && !file.getName().equals(zipFileName)) {
                     try (FileInputStream fis = new FileInputStream(file)) {
                         java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(file.getName());
                         zos.putNextEntry(zipEntry);

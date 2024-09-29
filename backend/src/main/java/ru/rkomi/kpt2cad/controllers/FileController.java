@@ -24,8 +24,8 @@ import ru.rkomi.kpt2cad.ShapeTools;
 
 import java.io.*;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -56,81 +56,118 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<Resource> handleFileUpload(
-            @RequestParam("files") MultipartFile[] files,
-            @RequestParam("xslFile") String xslFile) throws Exception {
+    public ResponseEntity<?> handleFileUpload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("sessionId") String sessionId) {
         try {
+            // Создаем директорию для сессии, если она не существует
+            Path sessionDir = Paths.get(OUTPUT_DIRECTORY, sessionId);
+            if (!Files.exists(sessionDir)) {
+                Files.createDirectories(sessionDir);
+            }
+
+            // Сохраняем загруженный файл в директорию сессии
+            Path savedFile = sessionDir.resolve(file.getOriginalFilename());
+            Files.write(savedFile, file.getBytes());
+
+            return ResponseEntity.ok().build();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Ошибка при сохранении файла");
+        }
+    }
+
+    @PostMapping("/convert")
+    public ResponseEntity<Resource> handleFileConversion(
+            @RequestBody Map<String, String> requestBody) {
+        try {
+            String sessionId = requestBody.get("sessionId");
+            String xslFile = requestBody.get("xslFile");
+
+            Path sessionDir = Paths.get(OUTPUT_DIRECTORY, sessionId);
+            if (!Files.exists(sessionDir)) {
+                return ResponseEntity.badRequest().body(null);
+            }
+
             Path xslFilePath = Paths.get(XSL_DIRECTORY, xslFile);
             if (!Files.exists(xslFilePath)) {
                 return ResponseEntity.badRequest().body(null);
             }
 
-            List<Path> savedFiles = new ArrayList<>();
-            for (MultipartFile file : files) {
-                Path tempFile = Files.createTempFile(file.getOriginalFilename(), ".tmp");
-                Files.write(tempFile, file.getBytes());
-                savedFiles.add(tempFile);
+            // Получаем список загруженных файлов
+            List<Path> uploadedFiles = Files.list(sessionDir)
+                    .filter(Files::isRegularFile)
+                    .toList();
+
+            if (uploadedFiles.isEmpty()) {
+                return ResponseEntity.badRequest().body(null);
             }
 
-            XslTransformer transformer = new XslTransformer();
-            String transformedFileName = "transformed_result.xml";
-            String transformedFilePath = Paths.get(OUTPUT_DIRECTORY, transformedFileName).toString();
-            transformer.transform(savedFiles.get(0).toString(), xslFilePath.toString(), transformedFilePath, files[0].getOriginalFilename(), 1, 1);
+            // Обрабатываем все загруженные файлы
+            List<GeometryFeature> allGeometryFeatures = new ArrayList<>();
 
-            GeometryParser geometryParser = new GeometryParser();
-            List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
+            for (Path inputFile : uploadedFiles) {
+                XslTransformer transformer = new XslTransformer();
+                String transformedFileName = "transformed_" + inputFile.getFileName().toString();
+                String transformedFilePath = sessionDir.resolve(transformedFileName).toString();
+                transformer.transform(inputFile.toString(), xslFilePath.toString(), transformedFilePath, inputFile.getFileName().toString(), 1, 1);
 
-            for (GeometryFeature feature : geometryFeatures) {
-                String cadQuarter = feature.getCadQrtr();
-                String cadRegionCode = cadQuarter.substring(0, 5);
+                GeometryParser geometryParser = new GeometryParser();
+                List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
 
-                KnownTransformation knownTransformation = coordinateSystemDictionary.getCoordinateSystem(cadRegionCode);
+                for (GeometryFeature feature : geometryFeatures) {
+                    String cadQuarter = feature.getCadQrtr();
+                    String cadRegionCode = cadQuarter.substring(0, 5);
 
-                if (knownTransformation != null) {
-                    Geometry inputGeometry = feature.getGeometry();
-                    System.out.println("Input geometry type: " + inputGeometry.getGeometryType());
+                    KnownTransformation knownTransformation = coordinateSystemDictionary.getCoordinateSystem(cadRegionCode);
 
-                    Geometry transformedGeometry = transformationEngine.transform(knownTransformation, feature.getGeometry());
+                    if (knownTransformation != null) {
+                        Geometry inputGeometry = feature.getGeometry();
+                        System.out.println("Input geometry type: " + inputGeometry.getGeometryType());
 
-                    if (transformedGeometry == null || transformedGeometry.isEmpty()) {
-                        throw new IllegalArgumentException("Transformed geometry is null or empty");
-                    }
-                    System.out.println("Transformed geometry type: " + transformedGeometry.getGeometryType());
+                        Geometry transformedGeometry = transformationEngine.transform(knownTransformation, feature.getGeometry());
 
-                    if (transformedGeometry instanceof MultiPolygon) {
-                        feature.setGeometry((MultiPolygon) transformedGeometry);
-                    } else if (transformedGeometry instanceof Polygon) {
-                        GeometryFactory geometryFactory = new GeometryFactory();
-                        MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(new Polygon[]{(Polygon) transformedGeometry});
-                        feature.setGeometry(multiPolygon);
-                    } else {
-                        throw new IllegalArgumentException("Transformed geometry is of unexpected type: " + transformedGeometry.getGeometryType());
+                        if (transformedGeometry == null || transformedGeometry.isEmpty()) {
+                            throw new IllegalArgumentException("Transformed geometry is null or empty");
+                        }
+                        System.out.println("Transformed geometry type: " + transformedGeometry.getGeometryType());
+
+                        if (transformedGeometry instanceof MultiPolygon) {
+                            feature.setGeometry((MultiPolygon) transformedGeometry);
+                        } else if (transformedGeometry instanceof Polygon) {
+                            GeometryFactory geometryFactory = new GeometryFactory();
+                            MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(new Polygon[]{(Polygon) transformedGeometry});
+                            feature.setGeometry(multiPolygon);
+                        } else {
+                            throw new IllegalArgumentException("Transformed geometry is of unexpected type: " + transformedGeometry.getGeometryType());
+                        }
                     }
                 }
+
+                allGeometryFeatures.addAll(geometryFeatures);
             }
 
             String outputFileName = "converted_result.shp";
-            String outputFilePath = Paths.get(OUTPUT_DIRECTORY, outputFileName).toString();
+            String outputFilePath = sessionDir.resolve(outputFileName).toString();
 
-            ShapeTools.saveConvertedGeometriesAsShapefile(geometryFeatures, outputFilePath);
+            ShapeTools.saveConvertedGeometriesAsShapefile(allGeometryFeatures, outputFilePath);
 
             String zipFileName = "converted_result.zip";
-            String zipFilePath = Paths.get(OUTPUT_DIRECTORY, zipFileName).toString();
+            String zipFilePath = sessionDir.resolve(zipFileName).toString();
             ShapeTools.zipShapefile(outputFilePath, zipFilePath);
 
             InputStreamResource resource = new InputStreamResource(new FileInputStream(zipFilePath));
 
-            // Удаление временных файлов
-            for (Path savedFile : savedFiles) {
-                Files.deleteIfExists(savedFile);
-            }
+            // Очистка временных файлов после обработки
+            Files.walk(sessionDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + zipFileName)
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
 
-        } catch (IOException | RuntimeException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);
         }

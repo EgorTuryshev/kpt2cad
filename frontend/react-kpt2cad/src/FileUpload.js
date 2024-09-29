@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import {
   Box,
   Typography,
@@ -11,14 +12,17 @@ import {
   InputLabel,
   IconButton,
   Paper,
+  CircularProgress,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { FileIcon, defaultStyles } from 'react-file-icon';
 
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
   const [xslFiles, setXslFiles] = useState([]);
   const [selectedOption, setSelectedOption] = useState('');
+  const [sessionId] = useState(uuidv4()); // Генерируем sessionId один раз при монтировании компонента
 
   // Загрузка списка файлов XSL с сервера при загрузке компонента
   useEffect(() => {
@@ -54,17 +58,22 @@ const FileUpload = () => {
     );
 
     if (validFiles.length > 0) {
-      setFiles((prevFiles) => [...prevFiles, ...validFiles]);
-      validFiles.forEach(uploadFile);
+      const filesWithStatus = validFiles.map((file) => ({
+        file,
+        status: 'uploading',
+      }));
+      setFiles((prevFiles) => [...prevFiles, ...filesWithStatus]);
+      filesWithStatus.forEach(uploadFile);
     }
   };
 
   // Функция для загрузки файла на сервер
-  const uploadFile = (file) => {
+  const uploadFile = (fileWithStatus) => {
+    const { file } = fileWithStatus;
     const formData = new FormData();
-    formData.append('files', file);
-    formData.append('xslFile', selectedOption); // Добавляем выбранный XSL файл
-
+    formData.append('file', file);
+    formData.append('sessionId', sessionId);
+  
     fetch('/api/upload', {
       method: 'POST',
       body: formData,
@@ -72,24 +81,65 @@ const FileUpload = () => {
       .then((response) => {
         if (response.ok) {
           console.log(`${file.name} загружен успешно.`);
-          return response.blob(); // Получаем файл в виде Blob
+          updateFileStatus(file, 'uploaded');
+        } else {
+          throw new Error('Ошибка загрузки файла');
         }
-        throw new Error('Ошибка загрузки файлов');
+      })
+      .catch((error) => {
+        console.error(`Ошибка при загрузке файла ${file.name}:`, error);
+        updateFileStatus(file, 'error');
+      });
+  };
+
+  const updateFileStatus = (file, status) => {
+    setFiles((prevFiles) =>
+      prevFiles.map((f) =>
+        f.file === file ? { ...f, status } : f
+      )
+    );
+  };
+
+  const handleSelectChange = (event) => {
+    setSelectedOption(event.target.value);
+  };
+
+  // Обработчик кнопки "Преобразовать файлы"
+  const handleConvertFiles = () => {
+    if (!selectedOption) {
+      alert('Пожалуйста, выберите XSL файл перед преобразованием.');
+      return;
+    }
+
+    // Отправляем запрос на бэкенд для преобразования файлов
+    fetch('/api/convert', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        xslFile: selectedOption,
+        sessionId: sessionId, // Передаем sessionId в запрос
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          return response.blob();
+        }
+        throw new Error('Ошибка преобразования файлов');
       })
       .then((blob) => {
         const url = window.URL.createObjectURL(new Blob([blob]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'processed_result.zip'); // Устанавливаем имя скачиваемого файла
+        link.setAttribute('download', 'converted_result.zip');
         document.body.appendChild(link);
         link.click();
         link.parentNode.removeChild(link);
       })
-      .catch((error) => console.error(`Ошибка при загрузке файла ${file.name}:`, error));
-  };
-
-  const handleSelectChange = (event) => {
-    setSelectedOption(event.target.value);
+      .catch((error) => {
+        console.error('Ошибка при преобразовании файлов:', error);
+      });
   };
 
   return (
@@ -127,44 +177,56 @@ const FileUpload = () => {
       </Box>
 
       <Typography variant="subtitle1" gutterBottom>
-        Готовы к загрузке
+        Файлы
       </Typography>
       <List>
-        {files.map((file, index) => (
-          <ListItem
-            key={index}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              p: 1,
-              mb: 1,
-              borderRadius: 1,
-              border: '1px solid #ddd',
-              boxShadow: 1,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 40, height: 40, mr: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileIcon
-                  extension={file.name.split('.').pop()}
-                  {...defaultStyles[file.name.split('.').pop()]}
-                  size={24}
-                  style={{ width: '100%', height: '100%' }}
-                />
+        {files.map((fileObj, index) => {
+          const { file, status } = fileObj;
+          return (
+            <ListItem
+              key={index}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                p: 1,
+                mb: 1,
+                borderRadius: 1,
+                border: '1px solid #ddd',
+                boxShadow: 1,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ width: 40, height: 40, mr: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileIcon
+                    extension={file.name.split('.').pop()}
+                    {...defaultStyles[file.name.split('.').pop()]}
+                    size={24}
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="body2">{file.name}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {file.size} байт
+                  </Typography>
+                </Box>
               </Box>
-              <Box>
-                <Typography variant="body2">{file.name}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {file.size} байт
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {status === 'uploading' && <CircularProgress size={24} sx={{ mr: 2 }} />}
+                {status === 'uploaded' && <CheckCircleIcon color="success" sx={{ mr: 2 }} />}
+                {status === 'error' && (
+                  <Typography variant="caption" color="error" sx={{ mr: 2 }}>
+                    Ошибка
+                  </Typography>
+                )}
+                <IconButton edge="end" onClick={() => handleRemoveFile(index)}>
+                  <DeleteIcon />
+                </IconButton>
               </Box>
-            </Box>
-            <IconButton edge="end" onClick={() => handleRemoveFile(index)}>
-              <DeleteIcon />
-            </IconButton>
-          </ListItem>
-        ))}
+            </ListItem>
+          );
+        })}
       </List>
 
       <FormControl fullWidth sx={{ mb: 2 }}>
@@ -173,6 +235,7 @@ const FileUpload = () => {
           labelId="select-label"
           value={selectedOption}
           onChange={handleSelectChange}
+          label="Выберите XSL файл"
         >
           {xslFiles.map((file, index) => (
             <MenuItem key={index} value={file}>
@@ -181,6 +244,16 @@ const FileUpload = () => {
           ))}
         </Select>
       </FormControl>
+
+      <Button
+        variant="contained"
+        color="primary"
+        fullWidth
+        onClick={handleConvertFiles}
+        disabled={files.length === 0 || files.some((f) => f.status !== 'uploaded')}
+      >
+        Преобразовать файлы
+      </Button>
     </Paper>
   );
 };
