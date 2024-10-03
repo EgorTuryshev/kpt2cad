@@ -18,6 +18,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { FileIcon, defaultStyles } from 'react-file-icon';
 
+// const apiUrl = process.env.REACT_APP_API_URL || '';
+
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
   const [xslFiles, setXslFiles] = useState([]);
@@ -26,11 +28,23 @@ const FileUpload = () => {
 
   // Загрузка списка файлов XSL с сервера при загрузке компонента
   useEffect(() => {
-    fetch('/api/xsl-files')
-      .then((response) => response.json())
-      .then((data) => setXslFiles(data))
+    fetch(`/api/xsl-files`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Ошибка сервера: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setXslFiles(data);
+        } else {
+          console.error('Ожидался массив, но получен другой тип данных:', data);
+          setXslFiles([]);
+        }
+      })
       .catch((error) => console.error('Ошибка при получении файлов XSL:', error));
-  }, []);
+  }, []);  
 
   const handleRemoveFile = (fileIndex) => {
     setFiles((prevFiles) => prevFiles.filter((_, index) => index !== fileIndex));
@@ -74,7 +88,7 @@ const FileUpload = () => {
     formData.append('file', file);
     formData.append('sessionId', sessionId);
   
-    fetch('/api/upload', {
+    fetch(`/api/upload`, {
       method: 'POST',
       body: formData,
     })
@@ -112,7 +126,7 @@ const FileUpload = () => {
     }
 
     // Отправляем запрос на бэкенд для преобразования файлов
-    fetch('/api/convert', {
+    fetch(`/api/convert`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

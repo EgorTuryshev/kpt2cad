@@ -1,18 +1,24 @@
 # KPT2CAD
 
-## Запуск
-
+## Запуск backend
+<b>Важно!</b>
+На текущий момент docker поддерживается только backend-частью
 1. Соберите Docker образ:
 
-   ```bash
-   docker build -t kpt2cad .
+   ```docker
+   docker build -t app .
    ```
 
 2. Запустите контейнер:
 
-   ```bash
-   docker run -d -p 8080:8080 -p 3000:3000 kpt2cad
+   ```docker
+   docker run -d --name app-container -p 8080:8080 app
    ```
+
+## Запуск frontend
+<b>TBD</b>
+
+На данный момент можно воспользоваться примером конфигурации nginx из репозитория.
 
 ## Порты (внутренние)
 

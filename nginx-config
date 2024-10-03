@@ -1,0 +1,57 @@
+server {
+    listen 80;
+    server_name xn--80ahlaoar.xn--p1ai www.xn--80ahlaoar.xn--p1ai;
+    client_max_body_size 2000M;
+    # Перенаправление HTTP на HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name xn--80ahlaoar.xn--p1ai www.xn--80ahlaoar.xn--p1ai;
+    client_max_body_size 2000M;
+    # SSL конфигурация
+    ssl_certificate /etc/letsencrypt/live/xn--80ahlaoar.xn--p1ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/xn--80ahlaoar.xn--p1ai/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Безопасные настройки SSL
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_prefer_server_ciphers on;
+
+    # Путь до фронта
+    root /var/www/myapp;
+    index index.html index.htm;
+
+    # Главный обработчик для React
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS, DELETE, PUT';
+        add_header Access-Control-Allow-Headers 'Content-Type, Authorization';
+    }
+
+    # Прокси-запросы к бэкенду (API)
+    location /api/ {
+        proxy_pass http://localhost:8080;  
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'keep-alive';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+
+        # Установка CORS-заголовков для API
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS, DELETE, PUT';
+        add_header Access-Control-Allow-Headers 'Content-Type, Authorization';
+    }
+
+    # Кэширование статических файлов
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|svg|ico|woff2?)$ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        access_log off;
+    }
+}

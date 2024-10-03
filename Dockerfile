@@ -1,42 +1,23 @@
-FROM node:18-alpine AS frontend-build
+# Backend-ONLY решение
+# Java 17 + Alpine
+FROM eclipse-temurin:17-jre-alpine
 
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем package.json и package-lock.json для установки зависимостей
-COPY frontend/package*.json ./
+# Копируем скомпилированный .jar файл в контейнер
+COPY app.jar /app/app.jar
 
-# Устанавливаем зависимости
-RUN npm install
+# Папки для работы
+RUN mkdir -p /app/output
+COPY xsl /app/xsl
+RUN chmod -R 777 /app/xsl /app/output && \
+    chown -R 1000:1000 /app/xsl /app/output
 
-# Копируем фронт
-COPY frontend/ .
+USER 1000
 
-# Собираем React
-RUN npm run build
-
-# Собираем Spring Boot
-FROM maven:3.9.0-eclipse-temurin-17-alpine AS backend-build
-
-WORKDIR /app
-
-# Копируем все файлы проекта
-COPY backend/ .
-
-# Собираем Spring Boot приложение
-RUN mvn clean package -DskipTests
-
-FROM eclipse-temurin:17-jdk-alpine
-
-WORKDIR /app
-
-# Копируем собранное Spring Boot приложение
-COPY --from=backend-build /app/target/*.jar app.jar
-
-# Копируем собранное React приложение в папку ресурсов Spring Boot
-COPY --from=frontend-build /app/build /app/resources/static
-
-# Указываем команду для запуска приложения Spring Boot
-CMD ["java", "-jar", "app.jar"]
-
-# Открываем порт 8080 для доступа к приложению
+# Открываем порт 8080
 EXPOSE 8080
+
+# Указываем команду запуска
+CMD ["java", "-jar", "/app/app.jar"]

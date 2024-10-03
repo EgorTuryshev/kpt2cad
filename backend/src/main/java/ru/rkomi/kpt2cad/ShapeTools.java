@@ -14,11 +14,16 @@ import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.zip.Deflater;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import ru.rkomi.kpt2cad.xslt.GeometryFeature;
 
-import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
 
 public class ShapeTools {
 
@@ -86,29 +91,25 @@ public class ShapeTools {
         String baseName = shapefile.getName().substring(0, shapefile.getName().lastIndexOf('.'));
         File dir = shapefile.getParentFile();
 
-        String zipFileName = new File(zipFilePath).getName();
-
         String[] extensions = {".shp", ".shx", ".dbf", ".prj", ".sbn", ".sbx", ".cpg"};
         List<String> extensionList = Arrays.asList(extensions);
 
         try (FileOutputStream fos = new FileOutputStream(zipFilePath);
-             java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos)) {
+             ZipOutputStream zos = new ZipOutputStream(fos)) {
+
+            zos.setLevel(Deflater.NO_COMPRESSION); // отсутствие сжатия
 
             for (File file : Objects.requireNonNull(dir.listFiles())) {
-                String fileExtension = file.getName().substring(file.getName().lastIndexOf('.')).toLowerCase();
-                if (file.getName().startsWith(baseName + ".") && extensionList.contains(fileExtension) && !file.getName().equals(zipFileName)) {
-                    try (FileInputStream fis = new FileInputStream(file)) {
-                        java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(file.getName());
-                        zos.putNextEntry(zipEntry);
+                String fileName = file.getName();
+                String fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
 
-                        byte[] bytes = new byte[1024];
-                        int length;
-                        while ((length = fis.read(bytes)) >= 0) {
-                            zos.write(bytes, 0, length);
-                        }
+                if (file.isFile() && !file.isHidden() && fileName.startsWith(baseName + ".") && extensionList.contains(fileExtension)) {
+                    ZipEntry zipEntry = new ZipEntry(fileName);
+                    zos.putNextEntry(zipEntry);
 
-                        zos.closeEntry();
-                    }
+                    Files.copy(file.toPath(), zos);
+
+                    zos.closeEntry();
                 }
             }
         }

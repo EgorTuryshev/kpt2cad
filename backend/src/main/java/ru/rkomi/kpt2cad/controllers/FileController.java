@@ -29,10 +29,14 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "https://https://xn--80ahlaoar.xn--p1ai/")
 public class FileController {
 
-    private static final String XSL_DIRECTORY = "G:\\Desktop\\JXSLT\\KPT2CAD\\kpt2cad\\xsl"; // Путь к директории с XSL файлами
-    private static final String OUTPUT_DIRECTORY = "G:\\Desktop\\JXSLT\\KPT2CAD\\kpt2cad\\output"; // Путь к директории для сохранения выходных файлов
+    private static final String BASE_DIRECTORY = Paths.get("").toAbsolutePath().toString();
+    // Путь к директории с XSL файлами
+    private static final String XSL_DIRECTORY = BASE_DIRECTORY + "/xsl";
+    // Путь к директории для сохранения выходных файлов
+    private static final String OUTPUT_DIRECTORY = BASE_DIRECTORY + "/output";
 
     @Autowired
     private Proj4TransformationEngine transformationEngine;
@@ -41,7 +45,9 @@ public class FileController {
     private CoordinateSystemDictionary coordinateSystemDictionary;
 
     @GetMapping("/xsl-files")
+    @CrossOrigin(origins = "https://https://xn--80ahlaoar.xn--p1ai/")
     public ResponseEntity<List<String>> getXslFiles() {
+        System.out.println(BASE_DIRECTORY);
         List<String> xslFiles = new ArrayList<>();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(XSL_DIRECTORY), "*.xsl")) {
@@ -56,6 +62,7 @@ public class FileController {
     }
 
     @PostMapping("/upload")
+    @CrossOrigin(origins = "https://https://xn--80ahlaoar.xn--p1ai/")
     public ResponseEntity<?> handleFileUpload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("sessionId") String sessionId) {
@@ -79,6 +86,7 @@ public class FileController {
     }
 
     @PostMapping("/convert")
+    @CrossOrigin(origins = "https://https://xn--80ahlaoar.xn--p1ai/")
     public ResponseEntity<Resource> handleFileConversion(
             @RequestBody Map<String, String> requestBody) {
         try {
