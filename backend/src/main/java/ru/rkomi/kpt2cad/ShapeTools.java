@@ -30,15 +30,16 @@ public class ShapeTools {
 
         typeBuilder.add("the_geom", MultiPolygon.class);
 
-        typeBuilder.add("src_file", String.class);
-        typeBuilder.add("DateUpload", String.class);
-        typeBuilder.add("cad_num", String.class);
-        typeBuilder.add("cad_qrtr", String.class);
-        typeBuilder.add("area", String.class);
-        typeBuilder.add("sk_id", String.class);
-        typeBuilder.add("category", String.class);
-        typeBuilder.add("permit_us", String.class);
-        typeBuilder.add("address", String.class);
+        // Устанавливаем длину 254 символа для строковых атрибутов
+        typeBuilder.length(254).add("src_file", String.class);
+        typeBuilder.length(254).add("DateUpload", String.class);
+        typeBuilder.length(254).add("cad_num", String.class);
+        typeBuilder.length(254).add("cad_qrtr", String.class);
+        typeBuilder.length(254).add("area", String.class);
+        typeBuilder.length(254).add("sk_id", String.class);
+        typeBuilder.length(254).add("category", String.class);
+        typeBuilder.length(254).add("permit_us", String.class);
+        typeBuilder.length(254).add("address", String.class);
 
         final SimpleFeatureType TYPE = typeBuilder.buildFeatureType();
 
@@ -67,16 +68,18 @@ public class ShapeTools {
                 DefaultFeatureCollection collection = new DefaultFeatureCollection();
 
                 for (GeometryFeature geometryFeature : geometryFeatures) {
-                    featureBuilder.add(geometryFeature.getGeometry());          // the_geom
-                    featureBuilder.add(geometryFeature.getSrcFile());           // src_file
-                    featureBuilder.add(geometryFeature.getDateUpload());        // DateUpload
-                    featureBuilder.add(geometryFeature.getCadNum());            // cad_num
-                    featureBuilder.add(geometryFeature.getCadQrtr());           // cad_qrtr
-                    featureBuilder.add(geometryFeature.getArea());              // area
-                    featureBuilder.add(geometryFeature.getSkId());              // sk_id
-                    featureBuilder.add(geometryFeature.getCategory());          // category
-                    featureBuilder.add(geometryFeature.getPermitUse());         // permit_us
-                    featureBuilder.add(geometryFeature.getAddress());
+                    featureBuilder.add(geometryFeature.getGeometry());  // the_geom
+
+                    // Обрезаем значения строковых атрибутов до 254 символов
+                    featureBuilder.add(truncateString(geometryFeature.getSrcFile(), 254));      // src_file
+                    featureBuilder.add(truncateString(geometryFeature.getDateUpload(), 254));   // DateUpload
+                    featureBuilder.add(truncateString(geometryFeature.getCadNum(), 254));       // cad_num
+                    featureBuilder.add(truncateString(geometryFeature.getCadQrtr(), 254));      // cad_qrtr
+                    featureBuilder.add(truncateString(geometryFeature.getArea(), 254));         // area
+                    featureBuilder.add(truncateString(geometryFeature.getSkId(), 254));         // sk_id
+                    featureBuilder.add(truncateString(geometryFeature.getCategory(), 254));     // category
+                    featureBuilder.add(truncateString(geometryFeature.getPermitUse(), 254));    // permit_us
+                    featureBuilder.add(truncateString(geometryFeature.getAddress(), 254));      // address
 
                     SimpleFeature feature = featureBuilder.buildFeature(null);
                     collection.add(feature);
@@ -97,5 +100,12 @@ public class ShapeTools {
                 newDataStore.dispose();
             }
         }
+    }
+
+    private static String truncateString(String value, int maxLength) {
+        if (value != null && value.length() > maxLength) {
+            return value.substring(0, maxLength);
+        }
+        return value;
     }
 }
