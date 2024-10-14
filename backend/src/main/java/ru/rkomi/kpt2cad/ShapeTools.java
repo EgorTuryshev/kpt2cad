@@ -15,6 +15,7 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 
 import ru.rkomi.kpt2cad.xslt.GeometryFeature;
@@ -57,6 +58,7 @@ public class ShapeTools {
             newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
             newDataStore.createSchema(TYPE);
             newDataStore.setCharset(StandardCharsets.UTF_8);
+            // newDataStore.setCharset(Charset.forName("CP1251"));
 
             String typeName = newDataStore.getTypeNames()[0];
             SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);

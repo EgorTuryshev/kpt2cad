@@ -11,8 +11,10 @@ COPY app.jar /app/app.jar
 # Папки для работы
 RUN mkdir -p /app/output
 COPY xsl /app/xsl
-RUN chmod -R 777 /app/xsl /app/output && \
-    chown -R 1000:1000 /app/xsl /app/output
+COPY prj /app/prj
+COPY CHANGELOG.md /app/CHANGELOG.md
+RUN chmod -R 777 /app/xsl /app/output /app/prj /app/CHANGELOG.md && \
+    chown -R 1000:1000 /app/xsl /app/output /app/prj /app/CHANGELOG.md
 
 USER 1000
 
