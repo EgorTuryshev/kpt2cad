@@ -18,15 +18,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { FileIcon, defaultStyles } from 'react-file-icon';
 
-// const apiUrl = process.env.REACT_APP_API_URL || '';
-
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
   const [xslFiles, setXslFiles] = useState([]);
   const [selectedOption, setSelectedOption] = useState('');
-  const [sessionId] = useState(uuidv4()); // Генерируем sessionId один раз при монтировании компонента
+  const [sessionId] = useState(uuidv4());
+  const [isConverting, setIsConverting] = useState(false);
 
-  // Загрузка списка файлов XSL с сервера при загрузке компонента
   useEffect(() => {
     fetch(`/api/xsl-files`)
       .then((response) => {
@@ -38,18 +36,44 @@ const FileUpload = () => {
       .then((data) => {
         if (Array.isArray(data)) {
           setXslFiles(data);
+          if (data.length > 0) {
+            setSelectedOption(data[0]);
+          }
         } else {
           console.error('Ожидался массив, но получен другой тип данных:', data);
           setXslFiles([]);
         }
       })
       .catch((error) => console.error('Ошибка при получении файлов XSL:', error));
-  }, []);  
+  }, []);
 
   const handleRemoveFile = (fileIndex) => {
-    setFiles((prevFiles) => prevFiles.filter((_, index) => index !== fileIndex));
+    const fileToRemove = files[fileIndex];
+    // Отправляем запрос на бэкенд для удаления файла
+    fetch(`/api/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fileName: fileToRemove.file.name,
+        sessionId: sessionId,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          // Удаляем файл из состояния
+          setFiles((prevFiles) => prevFiles.filter((_, index) => index !== fileIndex));
+        } else {
+          throw new Error('Ошибка удаления файла на сервере');
+        }
+      })
+      .catch((error) => {
+        console.error(`Ошибка при удалении файла ${fileToRemove.file.name}:`, error);
+      });
   };
 
+  // Добавляем функцию handleDrop
   const handleDrop = (event) => {
     event.preventDefault();
     const droppedFiles = Array.from(event.dataTransfer.files);
@@ -125,7 +149,8 @@ const FileUpload = () => {
       return;
     }
 
-    // Отправляем запрос на бэкенд для преобразования файлов
+    setIsConverting(true);
+
     fetch(`/api/convert`, {
       method: 'POST',
       headers: {
@@ -133,7 +158,7 @@ const FileUpload = () => {
       },
       body: JSON.stringify({
         xslFile: selectedOption,
-        sessionId: sessionId, // Передаем sessionId в запрос
+        sessionId: sessionId,
       }),
     })
       .then((response) => {
@@ -146,13 +171,16 @@ const FileUpload = () => {
         const url = window.URL.createObjectURL(new Blob([blob]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'converted_result.zip');
+        link.setAttribute('download', 'converted_results.zip');
         document.body.appendChild(link);
         link.click();
         link.parentNode.removeChild(link);
+        setIsConverting(false);
       })
       .catch((error) => {
         console.error('Ошибка при преобразовании файлов:', error);
+        alert('Произошла ошибка при преобразовании файлов. Пожалуйста, попробуйте еще раз.');
+        setIsConverting(false);
       });
   };
 
@@ -264,9 +292,14 @@ const FileUpload = () => {
         color="primary"
         fullWidth
         onClick={handleConvertFiles}
-        disabled={files.length === 0 || files.some((f) => f.status !== 'uploaded')}
+        disabled={
+          files.length === 0 ||
+          files.some((f) => f.status !== 'uploaded') ||
+          !selectedOption ||
+          isConverting
+        }
       >
-        Преобразовать файлы
+        {isConverting ? <CircularProgress size={24} /> : 'Преобразовать файлы'}
       </Button>
     </Paper>
   );

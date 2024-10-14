@@ -50,10 +50,43 @@ public class GeometryParser {
 			}
 
 			LinearRing shellRing = geometryFactory.createLinearRing(coordinateList.toArray(new Coordinate[0]));
-			Polygon polygon = geometryFactory.createPolygon(shellRing, null);
+
+			Element holesElement = shell.getChild("Holes");
+			Polygon polygon;
+			if (holesElement != null) {
+				List<Element> holeElements = holesElement.getChildren("Hole");
+				LinearRing[] holes = new LinearRing[holeElements.size()];
+				for (int i = 0; i < holeElements.size(); i++) {
+					Element hole = holeElements.get(i);
+					List<Element> holeCoords = hole.getChildren("Coordinate");
+					List<Coordinate> holeCoordList = new ArrayList<>();
+					for (Element holeCoord : holeCoords) {
+						double hx = Double.parseDouble(holeCoord.getAttributeValue("x"));
+						double hy = Double.parseDouble(holeCoord.getAttributeValue("y"));
+						holeCoordList.add(new Coordinate(hx, hy));
+					}
+					LinearRing holeRing = geometryFactory.createLinearRing(holeCoordList.toArray(new Coordinate[0]));
+					holes[i] = holeRing;
+				}
+				polygon = geometryFactory.createPolygon(shellRing, holes);
+			} else {
+				polygon = geometryFactory.createPolygon(shellRing);
+			}
+
 			MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(new Polygon[]{polygon});
 
-			GeometryFeature geometryFeature = new GeometryFeature(srcFile, dateUpload, cadNum, cadQrtr, area, skId, category, permitUse, address, multiPolygon);
+			GeometryFeature geometryFeature = new GeometryFeature();
+			geometryFeature.setSrcFile(srcFile);
+			geometryFeature.setDateUpload(dateUpload);
+			geometryFeature.setCadNum(cadNum);
+			geometryFeature.setCadQrtr(cadQrtr);
+			geometryFeature.setArea(area);
+			geometryFeature.setSkId(skId);
+			geometryFeature.setCategory(category);
+			geometryFeature.setPermitUse(permitUse);
+			geometryFeature.setAddress(address);
+			geometryFeature.setGeometry(multiPolygon);
+
 			geometryFeatures.add(geometryFeature);
 		}
 
@@ -69,4 +102,3 @@ public class GeometryParser {
 		return null;
 	}
 }
-

@@ -15,11 +15,7 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.util.*;
-import java.util.zip.Deflater;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import ru.rkomi.kpt2cad.xslt.GeometryFeature;
 
@@ -29,11 +25,20 @@ public class ShapeTools {
 
     public static void saveConvertedGeometriesAsShapefile(List<GeometryFeature> geometryFeatures, String shapefilePath) throws IOException {
         SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
-        typeBuilder.setName("GeometryFeature");
+        typeBuilder.setName("Zem_Uch");
         typeBuilder.setCRS(DefaultGeographicCRS.WGS84);
 
         typeBuilder.add("the_geom", MultiPolygon.class);
-        typeBuilder.add("cadQuarter", String.class);
+
+        typeBuilder.add("src_file", String.class);
+        typeBuilder.add("DateUpload", String.class);
+        typeBuilder.add("cad_num", String.class);
+        typeBuilder.add("cad_qrtr", String.class);
+        typeBuilder.add("area", String.class);
+        typeBuilder.add("sk_id", String.class);
+        typeBuilder.add("category", String.class);
+        typeBuilder.add("permit_us", String.class);
+        typeBuilder.add("address", String.class);
 
         final SimpleFeatureType TYPE = typeBuilder.buildFeatureType();
 
@@ -62,8 +67,16 @@ public class ShapeTools {
                 DefaultFeatureCollection collection = new DefaultFeatureCollection();
 
                 for (GeometryFeature geometryFeature : geometryFeatures) {
-                    featureBuilder.add(geometryFeature.getGeometry());
-                    featureBuilder.add(geometryFeature.getCadQrtr());
+                    featureBuilder.add(geometryFeature.getGeometry());          // the_geom
+                    featureBuilder.add(geometryFeature.getSrcFile());           // src_file
+                    featureBuilder.add(geometryFeature.getDateUpload());        // DateUpload
+                    featureBuilder.add(geometryFeature.getCadNum());            // cad_num
+                    featureBuilder.add(geometryFeature.getCadQrtr());           // cad_qrtr
+                    featureBuilder.add(geometryFeature.getArea());              // area
+                    featureBuilder.add(geometryFeature.getSkId());              // sk_id
+                    featureBuilder.add(geometryFeature.getCategory());          // category
+                    featureBuilder.add(geometryFeature.getPermitUse());         // permit_us
+                    featureBuilder.add(geometryFeature.getAddress());
 
                     SimpleFeature feature = featureBuilder.buildFeature(null);
                     collection.add(feature);
@@ -82,35 +95,6 @@ public class ShapeTools {
             transaction.close();
             if (newDataStore != null) {
                 newDataStore.dispose();
-            }
-        }
-    }
-
-    public static void zipShapefile(String shapefilePath, String zipFilePath) throws IOException {
-        File shapefile = new File(shapefilePath);
-        String baseName = shapefile.getName().substring(0, shapefile.getName().lastIndexOf('.'));
-        File dir = shapefile.getParentFile();
-
-        String[] extensions = {".shp", ".shx", ".dbf", ".prj", ".sbn", ".sbx", ".cpg"};
-        List<String> extensionList = Arrays.asList(extensions);
-
-        try (FileOutputStream fos = new FileOutputStream(zipFilePath);
-             ZipOutputStream zos = new ZipOutputStream(fos)) {
-
-            zos.setLevel(Deflater.NO_COMPRESSION); // отсутствие сжатия
-
-            for (File file : Objects.requireNonNull(dir.listFiles())) {
-                String fileName = file.getName();
-                String fileExtension = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
-
-                if (file.isFile() && !file.isHidden() && fileName.startsWith(baseName + ".") && extensionList.contains(fileExtension)) {
-                    ZipEntry zipEntry = new ZipEntry(fileName);
-                    zos.putNextEntry(zipEntry);
-
-                    Files.copy(file.toPath(), zos);
-
-                    zos.closeEntry();
-                }
             }
         }
     }

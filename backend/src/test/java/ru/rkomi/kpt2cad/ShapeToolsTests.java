@@ -72,7 +72,7 @@ public class ShapeToolsTests {
 
         String zipFilePath = tempDir.resolve("test_shapefile.zip").toString();
 
-        ShapeTools.zipShapefile(shapefilePath, zipFilePath);
+        // ShapeTools.zipShapefile(shapefilePath, zipFilePath);
 
         File zipFile = new File(zipFilePath);
         Assertions.assertTrue(zipFile.exists(), "Zip-файл должен быть создан");

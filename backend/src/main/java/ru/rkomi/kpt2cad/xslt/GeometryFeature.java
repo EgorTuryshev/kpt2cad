@@ -3,19 +3,19 @@ package ru.rkomi.kpt2cad.xslt;
 import org.locationtech.jts.geom.MultiPolygon;
 
 public class GeometryFeature {
-    private String srcFile;
-    private String dateUpload;
-    private String cadNum;
-    private String cadQrtr;
-    private String area;
-    private String skId;
-    private String category;
-    private String permitUse;
-    private String address;
-    private MultiPolygon geometry;
+    private String srcFile;      // src_file
+    private String dateUpload;   // DateUpload
+    private String cadNum;       // cad_num
+    private String cadQrtr;      // cad_qrtr
+    private String area;         // area
+    private String skId;         // sk_id
+    private String category;     // category
+    private String permitUse;    // permit_use
+    private String address;      // address
+    private MultiPolygon geometry; // the_geom
 
-    public GeometryFeature(String srcFile, String dateUpload, String cadNum, String cadQrtr, String area, String skId,
-                           String category, String permitUse, String address, MultiPolygon geometry) {
+    public GeometryFeature(String srcFile, String dateUpload, String cadNum, String cadQrtr, String area,
+                           String skId, String category, String permitUse, String address, MultiPolygon geometry) {
         this.srcFile = srcFile;
         this.dateUpload = dateUpload;
         this.cadNum = cadNum;
@@ -76,4 +76,3 @@ public class GeometryFeature {
                 '}';
     }
 }
-

@@ -4,130 +4,52 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2696df63-e982-4cec-a8a6-aa8b3cf0a3cb" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/config/WebConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/../Dockerfile" afterDir="false" />
+    <list default="true" id="eceb2565-3cfb-4d4d-a6c3-8421d82c8373" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/workspace.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/uiDesigner.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/ShapeTools.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/ShapeTools.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/controllers/FileController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/controllers/FileController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/react-kpt2cad/src/FileUpload.js" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/react-kpt2cad/src/FileUpload.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/xslt/GeometryFeature.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/xslt/GeometryFeature.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/xslt/GeometryParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ru/rkomi/kpt2cad/xslt/GeometryParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/ru/rkomi/kpt2cad/ShapeToolsTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/ru/rkomi/kpt2cad/ShapeToolsTests.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Class" />
-      </list>
-    </option>
-  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 6
 }</component>
-  <component name="ProjectId" id="2mBs4jWoYKckAnvxYpWHQVlJlMM" />
+  <component name="ProjectId" id="2myBRJYDH2EiexEiaJFnAMIt78t" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "JUnit.ShapeToolsTests.executor": "Run",
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "Spring Boot.Proj4DemoApplication.executor": "Run",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "G:/Desktop/JXSLT/KPT2CAD/kpt2cad/backend",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "build.tools",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.Proj4DemoApplication.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RecentsManager">
-    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
-      <recent name="ru.rkomi.kpt2cad" />
-    </key>
-  </component>
-  <component name="RunManager" selected="Spring Boot.Proj4DemoApplication">
-    <configuration name="ShapeToolsTests" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="proj4demo" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="ru.rkomi.kpt2cad.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <option name="PACKAGE_NAME" value="ru.rkomi.kpt2cad" />
-      <option name="MAIN_CLASS_NAME" value="ru.rkomi.kpt2cad.ShapeToolsTests" />
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Proj4DemoApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-      <module name="proj4demo" />
-      <option name="SPRING_BOOT_MAIN_CLASS" value="ru.rkomi.kpt2cad.Proj4DemoApplication" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="JUnit.ShapeToolsTests" />
-      </list>
-    </recent_temporary>
-  </component>
-  <component name="SharedIndexes">
-    <attachedChunks>
-      <set>
-        <option value="bundled-jdk-9823dce3aa75-b114ca120d71-intellij.indexing.shared.core-IU-242.21829.142" />
-        <option value="bundled-js-predefined-d6986cc7102b-7c0b70fcd90d-JavaScript-IU-242.21829.142" />
-      </set>
-    </attachedChunks>
-  </component>
+}</component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="2696df63-e982-4cec-a8a6-aa8b3cf0a3cb" name="Changes" comment="" />
-      <created>1726561115661</created>
+      <changelist id="eceb2565-3cfb-4d4d-a6c3-8421d82c8373" name="Changes" comment="" />
+      <created>1728038926089</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1726561115661</updated>
-      <workItem from="1726561116557" duration="1296000" />
-      <workItem from="1726930073811" duration="847000" />
-      <workItem from="1727015612245" duration="7241000" />
-      <workItem from="1727075518774" duration="1740000" />
-      <workItem from="1727181310845" duration="940000" />
-      <workItem from="1727373103022" duration="1344000" />
-      <workItem from="1727391942675" duration="1163000" />
-      <workItem from="1727393345345" duration="152000" />
-      <workItem from="1727616269482" duration="4161000" />
-      <workItem from="1727866080690" duration="3163000" />
-      <workItem from="1727956642649" duration="10000" />
-      <workItem from="1727958590323" duration="10157000" />
+      <updated>1728038926089</updated>
     </task>
     <servers />
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
-  </component>
-  <component name="XSLT-Support.FileAssociations.UIState">
-    <expand />
-    <select />
   </component>
 </project>
