@@ -20,8 +20,6 @@ import java.util.*;
 
 import ru.rkomi.kpt2cad.xslt.GeometryFeature;
 
-import java.nio.charset.StandardCharsets;
-
 public class ShapeTools {
 
     public static void saveConvertedGeometriesAsShapefile(List<GeometryFeature> geometryFeatures, String shapefilePath) throws IOException {
@@ -57,8 +55,7 @@ public class ShapeTools {
         try {
             newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
             newDataStore.createSchema(TYPE);
-            newDataStore.setCharset(StandardCharsets.UTF_8);
-            // newDataStore.setCharset(Charset.forName("CP1251"));
+            newDataStore.setCharset(Charset.forName("CP1251"));
 
             String typeName = newDataStore.getTypeNames()[0];
             SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);

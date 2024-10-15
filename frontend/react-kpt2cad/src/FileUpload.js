@@ -142,47 +142,52 @@ const FileUpload = () => {
     setSelectedOption(event.target.value);
   };
 
-  // Обработчик кнопки "Преобразовать файлы"
-  const handleConvertFiles = () => {
-    if (!selectedOption) {
-      alert('Пожалуйста, выберите XSL файл перед преобразованием.');
-      return;
-    }
+// Обработчик кнопки "Преобразовать файлы"
+const handleConvertFiles = () => {
+  if (!selectedOption) {
+    alert('Пожалуйста, выберите XSL файл перед преобразованием.');
+    return;
+  }
 
-    setIsConverting(true);
+  setIsConverting(true);
 
-    fetch(`/api/convert`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        xslFile: selectedOption,
-        sessionId: sessionId,
-      }),
+  fetch(`/api/convert`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      xslFile: selectedOption,
+      sessionId: sessionId,
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        const disposition = response.headers.get('Content-Disposition');
+        const fileName = disposition
+          ? disposition.split('filename=')[1].replace(/"/g, '')
+          : 'converted_results.zip';
+
+        return response.blob().then((blob) => ({ blob, fileName }));
+      }
+      throw new Error('Ошибка преобразования файлов');
     })
-      .then((response) => {
-        if (response.ok) {
-          return response.blob();
-        }
-        throw new Error('Ошибка преобразования файлов');
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(new Blob([blob]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'converted_results.zip');
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-        setIsConverting(false);
-      })
-      .catch((error) => {
-        console.error('Ошибка при преобразовании файлов:', error);
-        alert('Произошла ошибка при преобразовании файлов. Пожалуйста, попробуйте еще раз.');
-        setIsConverting(false);
-      });
-  };
+    .then(({ blob, fileName }) => {
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      setIsConverting(false);
+    })
+    .catch((error) => {
+      console.error('Ошибка при преобразовании файлов:', error);
+      alert(`Произошла ошибка: ${error.message}. Пожалуйста, попробуйте еще раз.`);
+      setIsConverting(false);
+   });
+};
 
   return (
     <Paper elevation={3} sx={{ maxWidth: 500, mx: 'auto', mt: 5, p: 3, borderRadius: 2 }}>

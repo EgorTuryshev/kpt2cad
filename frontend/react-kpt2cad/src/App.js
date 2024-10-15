@@ -7,7 +7,7 @@ import { Button } from '@mui/material';
 const App = () => {
   const [backendVersion, setBackendVersion] = useState(null);
   const [changelogOpen, setChangelogOpen] = useState(false);
-  const frontendVersion = '0.0.2';
+  const frontendVersion = '0.0.3';
 
   useEffect(() => {
     fetch('/api/version')

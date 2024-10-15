@@ -23,9 +23,13 @@ import ru.rkomi.kpt2cad.ShapeTools;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 @RestController
@@ -34,10 +38,14 @@ import java.util.zip.ZipOutputStream;
 public class FileController {
 
     private static final String BASE_DIRECTORY = Paths.get("").toAbsolutePath().toString();
+    // Максимальное количество папок сессий
+    private static final int MAX_SESSIONS = 10;
     // Путь к директории с XSL файлами
     private static final String XSL_DIRECTORY = BASE_DIRECTORY + "/xsl";
     // Путь к директории с PRJ файлами
     private static final String PRJ_DIRECTORY = BASE_DIRECTORY + "/prj";
+    // Путь к директории с CPG файлами
+    private static final String CPG_DIRECTORY = BASE_DIRECTORY + "/cpg";
     // Путь к директории для сохранения выходных файлов
     private static final String OUTPUT_DIRECTORY = BASE_DIRECTORY + "/output";
 
@@ -47,8 +55,73 @@ public class FileController {
     @Autowired
     private CoordinateSystemDictionary coordinateSystemDictionary;
 
+    private void cleanupOldSessions() throws IOException {
+        Path outputDir = Paths.get(OUTPUT_DIRECTORY);
+
+        // Получаем список всех папок в директории OUTPUT_DIRECTORY, отсортированных по времени последней модификации
+        List<Path> sessionFolders = Files.list(outputDir)
+                .filter(Files::isDirectory)
+                .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
+                .collect(Collectors.toList());
+
+        // Если количество папок превышает лимит, удаляем самые старые
+        while (sessionFolders.size() > MAX_SESSIONS) {
+            Path oldestSession = sessionFolders.get(0);
+            deleteDirectoryRecursively(oldestSession);
+            sessionFolders.remove(0);
+        }
+    }
+
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        Files.walk(path)
+                .sorted(Comparator.reverseOrder())  // сначала удаляем файлы, потом директорию
+                .map(Path::toFile)
+                .forEach(File::delete);
+    }
+
+    private List<Path> extractXmlFromZip(MultipartFile zipFile, Path outputDir) throws IOException {
+        List<Path> extractedXmlFiles = new ArrayList<>();
+
+        // Создаем временную директорию для извлечения файлов
+        Path tempDir = Files.createTempDirectory(outputDir, "zip_extract_");
+
+        try (InputStream is = new ByteArrayInputStream(zipFile.getBytes());
+             ZipInputStream zis = new ZipInputStream(is)) {
+
+            ZipEntry zipEntry;
+            while ((zipEntry = zis.getNextEntry()) != null) {
+                String fileName = Paths.get(zipEntry.getName()).getFileName().toString();
+                if (!zipEntry.isDirectory() && fileName.toLowerCase().endsWith(".xml")) {
+                    Path extractedFile = tempDir.resolve(fileName);
+                    Files.createDirectories(extractedFile.getParent());
+
+                    try (OutputStream os = Files.newOutputStream(extractedFile)) {
+                        byte[] buffer = new byte[1024];
+                        int len;
+                        while ((len = zis.read(buffer)) > 0) {
+                            os.write(buffer, 0, len);
+                        }
+                    }
+                    extractedXmlFiles.add(extractedFile);
+
+                    Path sessionFile = outputDir.resolve(fileName);
+                    Files.move(extractedFile, sessionFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+                zis.closeEntry();
+            }
+        } finally {
+            // Удаляем временную директорию
+            Files.walk(tempDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
+
+        return extractedXmlFiles;
+    }
+
     private void zipFolders(List<Path> folders, String zipFilePath) throws IOException {
-        Set<String> allowedExtensions = new HashSet<>(Arrays.asList(".shp", ".dbf", ".prj", ".shx"));
+        Set<String> allowedExtensions = new HashSet<>(Arrays.asList(".shp", ".dbf", ".prj", ".shx", ".cpg"));
 
         try (FileOutputStream fos = new FileOutputStream(zipFilePath);
              ZipOutputStream zos = new ZipOutputStream(fos)) {
@@ -133,15 +206,26 @@ public class FileController {
                 Files.createDirectories(sessionDir);
             }
 
-            // Сохраняем загруженный файл в директорию сессии
-            Path savedFile = sessionDir.resolve(file.getOriginalFilename());
-            Files.write(savedFile, file.getBytes());
+            // Определяем тип файла
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename != null && originalFilename.toLowerCase().endsWith(".zip")) {
+                List<Path> extractedXmlFiles = extractXmlFromZip(file, sessionDir);
+                if (extractedXmlFiles.isEmpty()) {
+                    return ResponseEntity.badRequest().body("ZIP файл не содержит XML-файлов.");
+                }
 
-            return ResponseEntity.ok().build();
+                return ResponseEntity.ok().body("XML файлы извлечены из ZIP архива: " + extractedXmlFiles.size());
 
+            } else if (originalFilename != null && originalFilename.toLowerCase().endsWith(".xml")) {
+                Path savedFile = sessionDir.resolve(originalFilename);
+                Files.write(savedFile, file.getBytes());
+                return ResponseEntity.ok().body("XML файл загружен успешно.");
+            } else {
+                return ResponseEntity.badRequest().body("Поддерживаются только XML и ZIP файлы.");
+            }
         } catch (IOException e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Ошибка при сохранении файла");
+            return ResponseEntity.status(500).body("Ошибка при обработке файла.");
         }
     }
 
@@ -163,9 +247,10 @@ public class FileController {
         }
 
         try {
-            // Получаем список загруженных файлов
+            // Получаем список загруженных XML-файлов (включая извлечённые из ZIP)
             List<Path> uploadedFiles = Files.list(sessionDir)
                     .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().toLowerCase().endsWith(".xml"))
                     .toList();
 
             if (uploadedFiles.isEmpty()) {
@@ -245,12 +330,20 @@ public class FileController {
                 Path destinationPrjPath = fileOutputDir.resolve(baseFileName + ".prj");
                 Files.copy(staticPrjPath, destinationPrjPath, StandardCopyOption.REPLACE_EXISTING);
 
+                // Копирование статического .cpg файла
+                Path staticCpgPath = Paths.get(CPG_DIRECTORY, "ansi1251.cpg");
+                Path destinationCpgPath = fileOutputDir.resolve(baseFileName + ".cpg");
+                Files.copy(staticCpgPath, destinationCpgPath, StandardCopyOption.REPLACE_EXISTING);
+
                 // Добавляем папку в список для архивации
                 foldersToZip.add(fileOutputDir);
             }
 
             // Создаем общий ZIP-архив
-            String zipFileName = "converted_results.zip";
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm", new Locale("ru"));
+            String xslFileNameWithoutExtension = xslFile.replaceAll("[^a-zA-Z0-9_\\-]", "_").replace(".xsl", "");
+            String zipFileName = xslFileNameWithoutExtension + "_" + now.format(formatter) + ".zip";
             String zipFilePath = sessionDir.resolve(zipFileName).toString();
 
             zipFolders(foldersToZip, zipFilePath);
@@ -279,6 +372,8 @@ public class FileController {
                     }
                 }
             };
+
+            cleanupOldSessions();
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + zipFileName)
