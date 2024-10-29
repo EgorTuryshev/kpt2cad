@@ -232,9 +232,14 @@ public class FileController {
     @PostMapping("/convert")
     @CrossOrigin(origins = "https://https://xn--80ahlaoar.xn--p1ai/")
     public ResponseEntity<StreamingResponseBody> handleFileConversion(
-            @RequestBody Map<String, String> requestBody) {
-        String sessionId = requestBody.get("sessionId");
-        String xslFile = requestBody.get("xslFile");
+            @RequestBody Map<String, Object> requestBody) {
+        String sessionId = (String) requestBody.get("sessionId");
+        String xslFile = (String) requestBody.get("xslFile");
+        Boolean mergeFiles = (Boolean) requestBody.get("mergeFiles"); // Получаем значение mergeFiles
+
+        if (mergeFiles == null) {
+            mergeFiles = false; // По умолчанию false, если параметр не передан
+        }
 
         Path sessionDir = Paths.get(OUTPUT_DIRECTORY, sessionId);
         if (!Files.exists(sessionDir)) {
@@ -247,11 +252,11 @@ public class FileController {
         }
 
         try {
-            // Получаем список загруженных XML-файлов (включая извлечённые из ZIP)
+            // Получаем список загруженных XML-файлов
             List<Path> uploadedFiles = Files.list(sessionDir)
                     .filter(Files::isRegularFile)
                     .filter(path -> path.toString().toLowerCase().endsWith(".xml"))
-                    .toList();
+                    .collect(Collectors.toList());
 
             if (uploadedFiles.isEmpty()) {
                 return ResponseEntity.badRequest().body(null);
@@ -266,77 +271,151 @@ public class FileController {
             // Список папок для архивации
             List<Path> foldersToZip = new ArrayList<>();
 
-            // Обрабатываем каждый файл отдельно
-            for (Path inputFile : uploadedFiles) {
-                String baseFileName = inputFile.getFileName().toString().replaceFirst("[.][^.]+$", "");  // Имя без расширения
+            // Если mergeFiles == true, то объединяем все геометрии в один Shapefile
+            if (mergeFiles) {
+                // Общий список геометрий
+                List<GeometryFeature> allGeometryFeatures = new ArrayList<>();
 
-                // Создаем отдельную папку для каждого файла
-                Path fileOutputDir = processingDir.resolve(baseFileName);
-                if (!Files.exists(fileOutputDir)) {
-                    Files.createDirectories(fileOutputDir);
-                }
+                for (Path inputFile : uploadedFiles) {
+                    String baseFileName = inputFile.getFileName().toString().replaceFirst("[.][^.]+$", "");
 
-                // Пути к выходным файлам
-                String transformedFileName = "transformed_" + baseFileName + ".xml";
-                String transformedFilePath = fileOutputDir.resolve(transformedFileName).toString();
+                    // Трансформация XML с помощью XSLT
+                    String transformedFileName = "transformed_" + baseFileName + ".xml";
+                    String transformedFilePath = processingDir.resolve(transformedFileName).toString();
 
-                String outputFileName = baseFileName + ".shp";
-                String outputFilePath = fileOutputDir.resolve(outputFileName).toString();
+                    XslTransformer transformer = new XslTransformer();
+                    transformer.transform(inputFile.toString(), xslFilePath.toString(), transformedFilePath, inputFile.getFileName().toString(), 1, 1);
 
-                // Трансформация XML с помощью XSLT
-                XslTransformer transformer = new XslTransformer();
-                transformer.transform(inputFile.toString(), xslFilePath.toString(), transformedFilePath, inputFile.getFileName().toString(), 1, 1);
+                    // Парсинг геометрии
+                    GeometryParser geometryParser = new GeometryParser();
+                    List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
 
-                // Парсинг геометрии
-                GeometryParser geometryParser = new GeometryParser();
-                List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
-
-                // Обработка геометрии и трансформация координат
-                for (GeometryFeature feature : geometryFeatures) {
-                    String cadQuarter = feature.getCadQrtr();
-                    if (cadQuarter == null || cadQuarter.length() < 5) {
-                        System.out.println("cadQuarter is null or too short for feature with cadNum: " + feature.getCadNum());
-                        continue;
-                    }
-                    String cadRegionCode = cadQuarter.substring(0, 5);
-
-                    KnownTransformation knownTransformation = coordinateSystemDictionary.getCoordinateSystem(cadRegionCode);
-
-                    if (knownTransformation != null) {
-                        Geometry inputGeometry = feature.getGeometry();
-                        Geometry transformedGeometry = transformationEngine.transform(knownTransformation, inputGeometry);
-
-                        if (transformedGeometry == null || transformedGeometry.isEmpty()) {
-                            throw new IllegalArgumentException("Transformed geometry is null or empty");
+                    // Обработка геометрии и трансформация координат
+                    for (GeometryFeature feature : geometryFeatures) {
+                        String cadQuarter = feature.getCadQrtr();
+                        if (cadQuarter == null || cadQuarter.length() < 5) {
+                            System.out.println("cadQuarter is null or too short for feature with cadNum: " + feature.getCadNum());
+                            continue;
                         }
+                        String cadRegionCode = cadQuarter.substring(0, 5);
 
-                        if (transformedGeometry instanceof MultiPolygon) {
-                            feature.setGeometry((MultiPolygon) transformedGeometry);
-                        } else if (transformedGeometry instanceof Polygon) {
-                            GeometryFactory geometryFactory = new GeometryFactory();
-                            MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(new Polygon[]{(Polygon) transformedGeometry});
-                            feature.setGeometry(multiPolygon);
-                        } else {
-                            throw new IllegalArgumentException("Transformed geometry is of unexpected type: " + transformedGeometry.getGeometryType());
+                        KnownTransformation knownTransformation = coordinateSystemDictionary.getCoordinateSystem(cadRegionCode);
+
+                        if (knownTransformation != null) {
+                            Geometry inputGeometry = feature.getGeometry();
+                            Geometry transformedGeometry = transformationEngine.transform(knownTransformation, inputGeometry);
+
+                            if (transformedGeometry == null || transformedGeometry.isEmpty()) {
+                                throw new IllegalArgumentException("Transformed geometry is null or empty");
+                            }
+
+                            if (transformedGeometry instanceof MultiPolygon) {
+                                feature.setGeometry((MultiPolygon) transformedGeometry);
+                            } else if (transformedGeometry instanceof Polygon) {
+                                GeometryFactory geometryFactory = new GeometryFactory();
+                                MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(new Polygon[]{(Polygon) transformedGeometry});
+                                feature.setGeometry(multiPolygon);
+                            } else {
+                                throw new IllegalArgumentException("Transformed geometry is of unexpected type: " + transformedGeometry.getGeometryType());
+                            }
                         }
                     }
+
+                    // Добавляем геометрии в общий список
+                    allGeometryFeatures.addAll(geometryFeatures);
                 }
 
-                // Сохранение в Shapefile
-                ShapeTools.saveConvertedGeometriesAsShapefile(geometryFeatures, outputFilePath);
+                // Сохраняем общий Shapefile
+                String outputFileName = "merged.shp";
+                String outputFilePath = processingDir.resolve(outputFileName).toString();
 
-                // Копирование статического .prj файла
+                ShapeTools.saveConvertedGeometriesAsShapefile(allGeometryFeatures, outputFilePath);
+
+                // Копируем необходимые файлы (.prj, .cpg)
                 Path staticPrjPath = Paths.get(PRJ_DIRECTORY, "wgs84.prj");
-                Path destinationPrjPath = fileOutputDir.resolve(baseFileName + ".prj");
+                Path destinationPrjPath = processingDir.resolve("merged.prj");
                 Files.copy(staticPrjPath, destinationPrjPath, StandardCopyOption.REPLACE_EXISTING);
 
-                // Копирование статического .cpg файла
                 Path staticCpgPath = Paths.get(CPG_DIRECTORY, "ansi1251.cpg");
-                Path destinationCpgPath = fileOutputDir.resolve(baseFileName + ".cpg");
+                Path destinationCpgPath = processingDir.resolve("merged.cpg");
                 Files.copy(staticCpgPath, destinationCpgPath, StandardCopyOption.REPLACE_EXISTING);
 
                 // Добавляем папку в список для архивации
-                foldersToZip.add(fileOutputDir);
+                foldersToZip.add(processingDir);
+
+            } else {
+                // Текущая логика обработки каждого файла отдельно
+                for (Path inputFile : uploadedFiles) {
+                    String baseFileName = inputFile.getFileName().toString().replaceFirst("[.][^.]+$", "");
+
+                    // Создаем отдельную папку для каждого файла
+                    Path fileOutputDir = processingDir.resolve(baseFileName);
+                    if (!Files.exists(fileOutputDir)) {
+                        Files.createDirectories(fileOutputDir);
+                    }
+
+                    // Пути к выходным файлам
+                    String transformedFileName = "transformed_" + baseFileName + ".xml";
+                    String transformedFilePath = fileOutputDir.resolve(transformedFileName).toString();
+
+                    String outputFileName = baseFileName + ".shp";
+                    String outputFilePath = fileOutputDir.resolve(outputFileName).toString();
+
+                    // Трансформация XML с помощью XSLT
+                    XslTransformer transformer = new XslTransformer();
+                    transformer.transform(inputFile.toString(), xslFilePath.toString(), transformedFilePath, inputFile.getFileName().toString(), 1, 1);
+
+                    // Парсинг геометрии
+                    GeometryParser geometryParser = new GeometryParser();
+                    List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
+
+                    // Обработка геометрии и трансформация координат
+                    for (GeometryFeature feature : geometryFeatures) {
+                        String cadQuarter = feature.getCadQrtr();
+                        if (cadQuarter == null || cadQuarter.length() < 5) {
+                            System.out.println("cadQuarter is null or too short for feature with cadNum: " + feature.getCadNum());
+                            continue;
+                        }
+                        String cadRegionCode = cadQuarter.substring(0, 5);
+
+                        KnownTransformation knownTransformation = coordinateSystemDictionary.getCoordinateSystem(cadRegionCode);
+
+                        if (knownTransformation != null) {
+                            Geometry inputGeometry = feature.getGeometry();
+                            Geometry transformedGeometry = transformationEngine.transform(knownTransformation, inputGeometry);
+
+                            if (transformedGeometry == null || transformedGeometry.isEmpty()) {
+                                throw new IllegalArgumentException("Transformed geometry is null or empty");
+                            }
+
+                            if (transformedGeometry instanceof MultiPolygon) {
+                                feature.setGeometry((MultiPolygon) transformedGeometry);
+                            } else if (transformedGeometry instanceof Polygon) {
+                                GeometryFactory geometryFactory = new GeometryFactory();
+                                MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(new Polygon[]{(Polygon) transformedGeometry});
+                                feature.setGeometry(multiPolygon);
+                            } else {
+                                throw new IllegalArgumentException("Transformed geometry is of unexpected type: " + transformedGeometry.getGeometryType());
+                            }
+                        }
+                    }
+
+                    // Сохранение в Shapefile
+                    ShapeTools.saveConvertedGeometriesAsShapefile(geometryFeatures, outputFilePath);
+
+                    // Копирование статического .prj файла
+                    Path staticPrjPath = Paths.get(PRJ_DIRECTORY, "wgs84.prj");
+                    Path destinationPrjPath = fileOutputDir.resolve(baseFileName + ".prj");
+                    Files.copy(staticPrjPath, destinationPrjPath, StandardCopyOption.REPLACE_EXISTING);
+
+                    // Копирование статического .cpg файла
+                    Path staticCpgPath = Paths.get(CPG_DIRECTORY, "ansi1251.cpg");
+                    Path destinationCpgPath = fileOutputDir.resolve(baseFileName + ".cpg");
+                    Files.copy(staticCpgPath, destinationCpgPath, StandardCopyOption.REPLACE_EXISTING);
+
+                    // Добавляем папку в список для архивации
+                    foldersToZip.add(fileOutputDir);
+                }
             }
 
             // Создаем общий ZIP-архив
@@ -359,7 +438,6 @@ public class FileController {
                     outputStream.flush();
                 } finally {
                     // После отправки файла можно безопасно удалить его и временные директории
-                    // Удаляем zip-файл
                     Files.deleteIfExists(Paths.get(zipFilePath));
 
                     // Удаляем директорию processing

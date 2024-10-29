@@ -17,6 +17,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { FileIcon, defaultStyles } from 'react-file-icon';
+import { Checkbox, FormControlLabel } from '@mui/material';
 
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
@@ -24,6 +25,11 @@ const FileUpload = () => {
   const [selectedOption, setSelectedOption] = useState('');
   const [sessionId] = useState(uuidv4());
   const [isConverting, setIsConverting] = useState(false);
+  const [mergeFiles, setMergeFiles] = useState(false);
+
+  const handleMergeFilesChange = (event) => {
+    setMergeFiles(event.target.checked);
+  };
 
   useEffect(() => {
     fetch(`/api/xsl-files`)
@@ -159,10 +165,12 @@ const handleConvertFiles = () => {
     body: JSON.stringify({
       xslFile: selectedOption,
       sessionId: sessionId,
+      mergeFiles: mergeFiles, // Передаем значение чекбокса
     }),
   })
     .then((response) => {
       if (response.ok) {
+        // Извлекаем имя файла из заголовка Content-Disposition
         const disposition = response.headers.get('Content-Disposition');
         const fileName = disposition
           ? disposition.split('filename=')[1].replace(/"/g, '')
@@ -176,7 +184,7 @@ const handleConvertFiles = () => {
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', fileName);
+      link.setAttribute('download', fileName); // Используем динамическое имя файла
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -184,9 +192,9 @@ const handleConvertFiles = () => {
     })
     .catch((error) => {
       console.error('Ошибка при преобразовании файлов:', error);
-      alert(`Произошла ошибка: ${error.message}. Пожалуйста, попробуйте еще раз.`);
+      alert('Произошла ошибка при преобразовании файлов. Пожалуйста, попробуйте еще раз.');
       setIsConverting(false);
-   });
+    });
 };
 
   return (
@@ -306,6 +314,26 @@ const handleConvertFiles = () => {
       >
         {isConverting ? <CircularProgress size={24} /> : 'Преобразовать файлы'}
       </Button>
+      <FormControlLabel
+          control={
+            <Checkbox
+              checked={mergeFiles}
+              onChange={handleMergeFilesChange}
+              color="primary"
+            />
+          }
+          label="Объединить все в один Shapefile"
+      />
+      <FormControlLabel
+          control={
+            <Checkbox
+              checked={mergeFiles}
+              onChange={handleMergeFilesChange}
+              color="primary"
+            />
+          }
+          label="Объединить все в один Shapefile"
+      />
     </Paper>
   );
 };
