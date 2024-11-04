@@ -235,10 +235,15 @@ public class FileController {
             @RequestBody Map<String, Object> requestBody) {
         String sessionId = (String) requestBody.get("sessionId");
         String xslFile = (String) requestBody.get("xslFile");
-        Boolean mergeFiles = (Boolean) requestBody.get("mergeFiles"); // Получаем значение mergeFiles
+        Boolean mergeFiles = (Boolean) requestBody.get("mergeFiles");
+        Boolean ignoreNull = (Boolean) requestBody.get("ignoreNull"); // Получаем значение ignoreNull
 
         if (mergeFiles == null) {
-            mergeFiles = false; // По умолчанию false, если параметр не передан
+            mergeFiles = false;
+        }
+
+        if (ignoreNull == null) {
+            ignoreNull = false;
         }
 
         Path sessionDir = Paths.get(OUTPUT_DIRECTORY, sessionId);
@@ -290,8 +295,24 @@ public class FileController {
                     GeometryParser geometryParser = new GeometryParser();
                     List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
 
+                    // Фильтрация геометрий при ignoreNull == true
+                    if (ignoreNull) {
+                        geometryFeatures = geometryFeatures.stream()
+                                .filter(feature -> feature.getGeometry() != null && !feature.getGeometry().isEmpty())
+                                .collect(Collectors.toList());
+                    }
+
                     // Обработка геометрии и трансформация координат
                     for (GeometryFeature feature : geometryFeatures) {
+                        if (feature.getGeometry() == null || feature.getGeometry().isEmpty()) {
+                            if (ignoreNull) {
+                                // Пропускаем этот объект
+                                continue;
+                            } else {
+                                throw new IllegalArgumentException("Geometry is null or empty for feature with cadNum: " + feature.getCadNum());
+                            }
+                        }
+
                         String cadQuarter = feature.getCadQrtr();
                         if (cadQuarter == null || cadQuarter.length() < 5) {
                             System.out.println("cadQuarter is null or too short for feature with cadNum: " + feature.getCadNum());
@@ -306,7 +327,11 @@ public class FileController {
                             Geometry transformedGeometry = transformationEngine.transform(knownTransformation, inputGeometry);
 
                             if (transformedGeometry == null || transformedGeometry.isEmpty()) {
-                                throw new IllegalArgumentException("Transformed geometry is null or empty");
+                                if (ignoreNull) {
+                                    continue;
+                                } else {
+                                    throw new IllegalArgumentException("Transformed geometry is null or empty for feature with cadNum: " + feature.getCadNum());
+                                }
                             }
 
                             if (transformedGeometry instanceof MultiPolygon) {
@@ -369,8 +394,24 @@ public class FileController {
                     GeometryParser geometryParser = new GeometryParser();
                     List<GeometryFeature> geometryFeatures = geometryParser.parse(transformedFilePath);
 
+                    // Фильтрация геометрий при ignoreNull == true
+                    if (ignoreNull) {
+                        geometryFeatures = geometryFeatures.stream()
+                                .filter(feature -> feature.getGeometry() != null && !feature.getGeometry().isEmpty())
+                                .collect(Collectors.toList());
+                    }
+
                     // Обработка геометрии и трансформация координат
                     for (GeometryFeature feature : geometryFeatures) {
+                        if (feature.getGeometry() == null || feature.getGeometry().isEmpty()) {
+                            if (ignoreNull) {
+                                // Пропускаем этот объект
+                                continue;
+                            } else {
+                                throw new IllegalArgumentException("Geometry is null or empty for feature with cadNum: " + feature.getCadNum());
+                            }
+                        }
+
                         String cadQuarter = feature.getCadQrtr();
                         if (cadQuarter == null || cadQuarter.length() < 5) {
                             System.out.println("cadQuarter is null or too short for feature with cadNum: " + feature.getCadNum());
@@ -385,7 +426,11 @@ public class FileController {
                             Geometry transformedGeometry = transformationEngine.transform(knownTransformation, inputGeometry);
 
                             if (transformedGeometry == null || transformedGeometry.isEmpty()) {
-                                throw new IllegalArgumentException("Transformed geometry is null or empty");
+                                if (ignoreNull) {
+                                    continue;
+                                } else {
+                                    throw new IllegalArgumentException("Transformed geometry is null or empty for feature with cadNum: " + feature.getCadNum());
+                                }
                             }
 
                             if (transformedGeometry instanceof MultiPolygon) {

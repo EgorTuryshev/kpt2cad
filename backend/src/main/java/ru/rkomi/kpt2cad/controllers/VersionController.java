@@ -24,7 +24,7 @@ public class VersionController {
     @GetMapping("/version")
     public ResponseEntity<Map<String, String>> getVersion() {
         Map<String, String> versionInfo = new HashMap<>();
-        versionInfo.put("version", "0.0.3");
+        versionInfo.put("version", "0.0.4");
         return ResponseEntity.ok(versionInfo);
     }
     @GetMapping("/changelog")

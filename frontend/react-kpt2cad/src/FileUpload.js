@@ -26,9 +26,14 @@ const FileUpload = () => {
   const [sessionId] = useState(uuidv4());
   const [isConverting, setIsConverting] = useState(false);
   const [mergeFiles, setMergeFiles] = useState(false);
+  const [ignoreNull, setIgnoreNull] = useState(false);
 
   const handleMergeFilesChange = (event) => {
     setMergeFiles(event.target.checked);
+  };
+
+  const handleIgnoreNullChange = (event) => {
+    setIgnoreNull(event.target.checked);
   };
 
   useEffect(() => {
@@ -165,7 +170,8 @@ const handleConvertFiles = () => {
     body: JSON.stringify({
       xslFile: selectedOption,
       sessionId: sessionId,
-      mergeFiles: mergeFiles, // Передаем значение чекбокса
+      mergeFiles: mergeFiles,
+      ignoreNull: ignoreNull,
     }),
   })
     .then((response) => {
@@ -327,12 +333,12 @@ const handleConvertFiles = () => {
       <FormControlLabel
           control={
             <Checkbox
-              checked={mergeFiles}
-              onChange={handleMergeFilesChange}
+              checked={ignoreNull}
+              onChange={handleIgnoreNullChange}
               color="primary"
             />
           }
-          label="Объединить все в один Shapefile"
+          label="Игнорировать нулевую геометрию"
       />
     </Paper>
   );
